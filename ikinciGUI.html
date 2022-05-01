@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.GUI</title>
+    <link href="https://fonts.googleapis.com/css?family=Lobster" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0px;
+            padding: 0px;
+            border: 0px;
+            z-index: 0;
+        }
+
+        body {
+            height: 100%;
+        }
+
+        .map {
+            display: inline-block;
+        }
+
+        .inputs {
+            display: inline-block;
+            z-index: 1;
+            background-color: brown;
+            width: 155px;
+            height: 150px;
+        }
+    </style>
+</head>
+
+<body onclick="markeraVeriCekme();"">
+    <div class=" container-fluid">
+    <div class="row">
+        <div id="map" class="map" style="width: 99%; height: 680px;"></div>
+    </div>
+
+
+    </div>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default%22%3E"></script>
+
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAsM35YTYmCsSaFaSFVUA4UM7JxiYVChAk&callback=initMap&libraries=places&v=weekly&channel=2"
+        async></script>
+
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-analytics.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+            apiKey: "AIzaSyDKmLxmC35GyDZAaNkf6comflrZBQfH-uQ",
+            authDomain: "yazlab1-cf815.firebaseapp.com",
+            projectId: "yazlab1-cf815",
+            storageBucket: "yazlab1-cf815.appspot.com",
+            messagingSenderId: "30298260078",
+            appId: "1:30298260078:web:03b1635734e01fb1439c7f",
+            measurementId: "G-HTHGQ9JP51"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+
+        import {
+            getFirestore, doc, getDoc, getDocs, setDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, deleteField
+        }
+            from "https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore.js";
+        const db = getFirestore();
+
+        let databaseName = "kullanicilar";
+
+
+        //Diger sayfadan gelen kullanıcıId
+        var link = window.location.href;
+        link = link.replace("gelismisMap.html?%22,%22%22");
+
+
+        var kullanıcıId = link.split("?")[1];
+
+
+        //output tanıtma
+        let locationXbox = document.getElementById("X");
+        let locationYbox = document.getElementById("Y");
+        let locationXValues = [];
+        let locationYValues = [];
+
+        //Verileri alma
+
+        var VerilerX = [];
+        var VerilerY = [];
+
+        //Markerlar
+        let Markers = [];
+
+
+        async function GetAllDataOnce() {
+            hideMarkers();
+
+            const querySnapshot = await getDocs(collection(db, databaseName));
+
+            querySnapshot.forEach(doc => {
+
+                VerilerX.push(doc.data().X);
+                VerilerY.push(doc.data().Y);
+            });
+
+            var Keys = Object.keys(VerilerY);
+            var TümY = [];
+            var TümX = [];
+            for (let i = 0; i < Keys.length; i++) {
+                for (let j = 0; j < VerilerY[i].length; j++) {
+                    TümY.push(VerilerY[i][j]);
+                    TümX.push(VerilerX[i][j]);
+                }
+            }
+
+            //   addItemToTable(Veriler);
+
+            markeraVeriCekme(TümX, TümY, TümY.length, db);
+            TümY = [];
+            TümX = [];
+            VerilerX = [];
+            VerilerY = [];
+
+        }
+
+
+        //Kargocunun durumuna gore db guncellemesi 
+      /*  function databaseGuncelle(yeniX,yeniY,eskiX,eskiY) {
+            eskiX.push(yeniX);
+            eskiY.push(yeniY);
+            var ref = doc(db, databaseName, kullanıcıId);
+            await updateDoc(
+                ref, {
+                X: yeniX,
+                Y: yeniY,
+                TeslimDurumu: false,
+                KargoID: KARGOID
+            }
+            );
+            try {
+                alert("Veri Güncellemesi başarılı bir şekilde gerçekleşti");
+            } catch (error) {
+                alert("Güncellenirken sorun cıktı hata:" + error);
+            }
+        }*/
+
+        window.onload = GetAllDataOnce;
+
+        setInterval(GetAllDataOnce, 2000);
+
+
+    </script>
+    <script>
+
+
+        //Map API
+        let markers = [];
+        let map;
+        var dizi = [];
+        var abidin = 0;
+        let globalMap;
+        var teslimEdilmemişKargolarınXleri = [];
+        var teslimEdilmemişKargolarınYleri = [];
+        let dbY = [];
+        let dbX = [];
+
+        // Standard google maps function
+        function initMap() {
+            var myLatlng = new google.maps.LatLng(39.925533, 32.866287);
+            var myOptions = {
+                zoom: 5,
+                center: myLatlng,
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            }
+            map = new google.maps.Map(document.getElementById("map"), myOptions);
+
+            new AutocompleteDirectionsHandler(map);
+        }
+
+        // Function for adding a marker to the page.
+        function addMarker(location, X, Y) {
+            marker = new google.maps.Marker({
+                position: location,
+                map: map
+            });
+            MarkersMap.push(marker);
+        }
+
+        // Testing the addMarker function
+        function TestMarker(x, y) {
+            CentralPark = new google.maps.LatLng(x, y);
+            addMarker(CentralPark);
+
+        }
+
+        function setMapOnAll(map) {
+            for (let i = 0; i < markers.length; i++) {
+
+
+
+                for (var key in markers[0]) {
+                    if (key == 'position') {
+
+                        var markerx = markers[i][key].toJSON().lat;
+                        var markery = markers[i][key].toJSON().lng;
+
+                        if (!(dbX.includes(markerx)) && !(dbY.includes(markery))) {
+                            markers[i].setMap(null);
+
+                        }
+                    }
+                }
+
+            }
+
+            dbX = [];
+            dbY = [];
+        }
+        // Removes the markers from the map, but keeps them in the array.
+        function hideMarkers() {
+            setMapOnAll(null);
+
+        }
+
+        // Shows any markers currently in the array.
+
+        function addMarker(location) {
+            marker = new google.maps.Marker({
+                position: location,
+                map: map
+            });
+            markers.push(marker);
+        }
+
+        function markeraVeriCekme(VerilerX, VerilerY, length) {
+            for (var i = 0; i < length; i++) {
+                dbX.push(VerilerX[i]);
+                dbY.push(VerilerY[i]);
+
+                TestMarker(VerilerX[i], VerilerY[i]);
+
+            }
+
+        }
+
+        //Tunay kısmı
+
+
+        //DEĞİŞKENLER
+        var dizi_x = [];
+        var dizi_y = [];
+        var abidin = 0;
+        var abidin2 = 0;
+        var yollar_x = [];
+        var yollar_y = [];
+        var uzaklıklar = [];
+        var teslimat_x, teslimat_y;
+        var kuryeX = [];
+        var kuryeY = [];
+
+        class AutocompleteDirectionsHandler {
+            map;
+            originPlaceId;
+            destinationPlaceId;
+            directionsService;
+            directionsRenderer;
+            constructor(map) {
+                this.map = map;
+                this.originPlaceId = "";
+                this.destinationPlaceId = "";
+                this.directionsService = new google.maps.DirectionsService();
+                this.directionsRenderer = new google.maps.DirectionsRenderer();
+                this.directionsRenderer.setMap(map);
+
+            }
+            // Sets a listener on a radio button to change the filter type on Places
+            // Autocomplete.
+            setupClickListener(id, mode) {
+                const radioButton = document.getElementById(id);
+
+                radioButton.addEventListener("click", () => {
+
+                    this.route();
+                });
+            }
+            setupPlaceChangedListener(autocomplete, mode) {
+                autocomplete.bindTo("bounds", this.map);
+                autocomplete.addListener("place_changed", () => {
+                    const place = autocomplete.getPlace();
+
+                    if (!place.place_id) {
+                        window.alert("Please select an option from the dropdown list.");
+                        return;
+                    }
+
+                    if (mode === "ORIG") {
+                        this.originPlaceId = place.place_id;
+                    } else {
+                        this.destinationPlaceId = place.place_id;
+                    }
+
+                    this.route();
+                });
+            }
+            route() {
+                if (!this.originPlaceId || !this.destinationPlaceId) {
+                    return;
+                }
+
+                const me = this;
+
+                this.directionsService.route(
+                    {
+                        origin: { placeId: this.originPlaceId },
+                        destination: { placeId: this.destinationPlaceId },
+
+                    },
+                    (response, status) => {
+                        if (status === "OK") {
+                            me.directionsRenderer.setDirections(response);
+                        } else {
+                            window.alert("Directions request failed due to " + status);
+                        }
+                    }
+                );
+            }
+        }
+
+
+        function permütasyon(dizi_x, dizi_y, pos, tos) {
+
+            if (dizi_x[0] == teslimat_x) {
+                if (pos >= dizi_x.length) {
+                    for (var i = 0; i < dizi_x.length; i++) {
+                        yollar_x.push(dizi_x[i]);
+
+
+                    }
+                   
+
+                }
+            }
+            if (dizi_y[0] == teslimat_y) {
+                if (tos >= dizi_y.length) {
+                    for (var i = 0; i < dizi_y.length; i++) {
+
+                        yollar_y.push(dizi_y[i]);
+
+                    }
+                   
+
+                    calcDistance(dizi_x, dizi_y);
+
+                }
+            }
+
+            for (var i = pos; i < dizi_x.length; i++) {
+
+                var t = dizi_x[pos];
+                dizi_x[pos] = dizi_x[i];
+                dizi_x[i] = t;
+
+                var k = dizi_y[tos];
+                dizi_y[tos] = dizi_y[i];
+                dizi_y[i] = k;
+                permütasyon(dizi_x, dizi_y, pos + 1, tos + 1);
+
+                t = dizi_x[pos];
+                dizi_x[pos] = dizi_x[i];
+                dizi_x[i] = t;
+
+                k = dizi_y[tos];
+                dizi_y[tos] = dizi_y[i];
+                dizi_y[i] = k;
+
+            }
+
+
+        }
+        function calcDistance(dizi_x, dizi_y) {
+
+
+            if (dizi_x.length >= 2) {
+
+                var sum = 0;
+          
+                for (var i = 0; i < dizi_x.length - 1; i++) {
+
+
+                    const konum1 = { lat: dizi_x[i], lng: dizi_y[i] };
+                    const konum2 = { lat: dizi_x[i + 1], lng: dizi_y[i + 1] };
+
+                    var mk1 = new google.maps.Marker({ position: konum1, map: map });
+                    var mk2 = new google.maps.Marker({ position: konum2, map: map });
+                    sum += Mesafe_Hesapla(mk1, mk2);
+                   
+                    mk1.setVisible(false);
+                    mk2.setVisible(false);
+
+                }
+                uzaklıklar.push(sum);
+            }
+        }
+
+        function Tunay() {
+            removeLine();
+            teslimat_x = dbX[0];
+            teslimat_y = dbY[0];
+            permütasyon(dbX, dbY, 0, 0);
+            bestRoute(dbX.length);
+            dizi_x = [];
+            dizi_y = [];
+        }
+        var linez = [];
+
+        function removeLine() {
+
+            for (let i = 0; i < linez.length; i++) {
+                linez[i].setMap(null);
+            }
+
+        }
+
+        function bestRoute(yol) {
+            var rota_x = [];
+            var rota_y = [];
+            var minumum = Number.MAX_SAFE_INTEGER;
+            var keep_index;
+            for (var i = 0; i < uzaklıklar.length; i++) {
+                if (uzaklıklar[i] < minumum) {
+                    minumum = uzaklıklar[i];
+                    keep_index = i;
+                }
+            }
+
+            for (var i = 0; i < yol; i++) {
+                rota_x.push(yollar_x[keep_index * yol + i]);
+                rota_y.push(yollar_y[keep_index * yol + i]);
+
+            }
+
+            RotaÇiz(rota_x, rota_y);
+            yollar_x = [];
+            yollar_y = [];
+            uzaklıklar = [];
+
+        }
+
+
+        function Mesafe_Hesapla(mk1, mk2) {
+            var R = 6371.0710272 // Radius of the Earth in miles
+            var rlat1 = mk1.position.lat() * (Math.PI / 180); // Convert degrees to radians
+            var rlat2 = mk2.position.lat() * (Math.PI / 180); // Convert degrees to radians
+            var difflat = rlat2 - rlat1; // Radian difference (latitudes)
+            var difflon = (mk2.position.lng() - mk1.position.lng()) * (Math.PI / 180); // Radian difference (longitudes)
+
+            var d = 2 * R * Math.asin(Math.sqrt(Math.sin(difflat / 2) * Math.sin(difflat / 2) + Math.cos(rlat1) * Math.cos(rlat2) * Math.sin(difflon / 2) * Math.sin(difflon / 2)));
+            return d;
+        }
+        function RotaÇiz(rota_x, rota_y) {
+            linez = [];
+            for (var i = 0; i < rota_x.length - 1; i++) {
+
+                const flightPathCoordinates = [
+                    { lat: rota_x[i], lng: rota_y[i] },
+                    { lat: rota_x[i + 1], lng: rota_y[i + 1] },
+                ];
+
+                flightPath = new google.maps.Polyline({
+                    path: flightPathCoordinates,
+                    strokeColor: "blue",
+                    strokeOpacity: 1.0,
+                    strokeWeight: 2,
+                    map,
+                });
+
+                linez.push(flightPath);
+            }
+            kuryeX = rota_x;
+            kuryeY = rota_y;
+
+        }
+        function kuryeIlerle() {
+            alert(kuryeX + " line " + linez);
+            kuryeX.shift();
+            kuryeY.shift();
+           // databaseGuncelle(kuryeX,kuryeY,rota_x[0],rota_y[0]);
+            linez[0].setVisible(false);
+            linez.shift();
+        }
+
+        setInterval(Tunay, 15000);
+
+
+    </script>
+    <div class="row">
+        <div class="col-md-3 col-sm-3">
+
+        </div>
+        <div class="col-md-6 col-sm-6">
+            <button class="btn btn-danger w-100" onclick="kuryeIlerle();">Teslimata Başla</button>
+        </div>
+        <div class="col-md-3 col-sm-3">
+
+        </div>
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DB Arayüz</title>
+    <link href="https://fonts.googleapis.com/css?family=Lobster" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <style>
+        body {
+            background-color: wheat;
+        }
+
+        .container-fluid {
+            padding: 50px;
+        }
+
+        .container {
+            background-color: white;
+            padding: 50px;
+        }
+
+        #title {
+            font-family: 'Lobster', cursive;
+            font-weight: bolder;
+        }
+
+        @media only screen and (max-width:767px) {
+            .bir {
+
+                margin-top: 50px;
+            }
+
+            .iki {
+                margin-top: 50px;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container-fluid">
+
+        <h2 class="text-center" id="title">Kullanıcı Ekranına Hoşgeldiniz</h2>
+
+        <hr>
+        <div class="row">
+            <div class="col-md-5 iki">
+
+                <fieldset>
+                    <p class="text-uppercase pull-center" style="font-weight: bolder;"> Kaydol</p>
+                    <div class="form-group">
+                        <input type="text" id="kayitUsrname" class="form-control input-lg"
+                            placeholder="Kullanıcı Adını giriniz" required>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <input type="password" id="kayitPassword" class="form-control input-lg"
+                            placeholder="Şifrenizi giriniz" required>
+                    </div>
+
+                    <div class="form-check mt-3">
+                        <label class="form-check-label">
+                            <input type="checkbox" class="form-check-input" required>
+                            Sözleşmeyi okudum,onaylıyorum.
+                        </label>
+                    </div>
+                    <div>
+                        <button class="btn btn-success my-2" id="kayitButon">Kayıt Ol</button>
+                    </div>
+                </fieldset>
+
+            </div>
+
+            <div class="col-md-2">
+
+
+            </div>
+
+            <div class="col-md-5   bir">
+
+                <fieldset>
+                    <p class="text-uppercase " style="font-weight: bolder;"> Giriş Yap </p>
+
+                    <div class="form-group mb-3">
+                        <input type="text" id="girisUsrname" class="form-control input-lg"
+                            placeholder="Kullanıcı Adınızı giriniz">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="girisPassword" class="form-control input-lg"
+                            placeholder="Şifrenizi giriniz">
+                    </div>
+                    <div>
+                        <button class="btn btn-success my-3" id="girisButon">Giriş Yap</button>
+                    </div>
+
+                </fieldset>
+
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-3">
+
+            </div>
+            <div class="col-md-6">
+                <fieldset>
+                    <p class="text-uppercase " style="font-weight: bolder;"> Şifre Değiştirme </p>
+                    <div class="form-group mb-3">
+                        <input type="text" id="adSifredgstr" class="form-control input-lg"
+                            placeholder="Kullanıcı Adınız Giriniz">
+                    </div>
+                    <div class="form-group mb-3">
+                        <input type="text" id="eskiSifre" class="form-control input-lg"
+                            placeholder="Eski Şifrenizi Giriniz">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="yeniSifre" class="form-control input-lg"
+                            placeholder=" Yeni Şifrenizi Giriniz">
+                    </div>
+                    <div>
+                        <button class="btn btn-success my-3" id="sifreButton">Şifre Değiştir</button>
+                    </div>
+
+                </fieldset>
+            </div>
+            <div class="col-md-3">
+
+            </div>
+
+        </div>
+
+    </div>d
+
+
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.3/firebase-analytics.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+            apiKey: "AIzaSyDKmLxmC35GyDZAaNkf6comflrZBQfH-uQ",
+            authDomain: "yazlab1-cf815.firebaseapp.com",
+            projectId: "yazlab1-cf815",
+            storageBucket: "yazlab1-cf815.appspot.com",
+            messagingSenderId: "30298260078",
+            appId: "1:30298260078:web:03b1635734e01fb1439c7f",
+            measurementId: "G-HTHGQ9JP51"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+
+        import {
+            getFirestore, doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteDoc, deleteField
+        }
+            from "https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore.js";
+        const db = getFirestore();
+
+        let kullanici_adi;
+        let kullanici_sifre;
+
+        let databaseName = "kullanicilar";
+
+        let kayitadBox = document.getElementById("kayitUsrname");
+        let kayitSifreBox = document.getElementById("kayitPassword");
+        let kayitButton = document.getElementById("kayitButon");
+
+        let girisadBox = document.getElementById("girisUsrname");
+        let girisSifreBox = document.getElementById("girisPassword");
+        let girisButton = document.getElementById("girisButon");
+
+        let sifreDgstrAdBox = document.getElementById("adSifredgstr");
+        let sifreDgstrEskiSifreBox = document.getElementById("eskiSifre");
+        let sifreDgstrYeniSifreBox = document.getElementById("yeniSifre");
+        let sifreButton = document.getElementById("sifreButton");
+
+
+        async function Ekleme() {
+
+            var ref = doc(db, databaseName, kayitadBox.value);
+            const docRef = await setDoc(
+                ref, {
+                KullaniciAd: kayitadBox.value,
+                Sifre: kayitSifreBox.value,
+
+            }
+            ).then(() => {
+                alert("Kayit Basarili");
+            }
+
+            ).catch((error) => {
+
+                alert("Kayit Olunamadi" + error);
+            })
+        }
+
+        async function Giris() {
+            var ref = doc(db, databaseName, girisadBox.value);
+
+            const docSnap = await getDoc(ref);
+
+            if (docSnap.exists()) {
+                kullanici_adi = docSnap.data().KullaniciAd;
+                kullanici_sifre = docSnap.data().Sifre;
+
+                if (girisadBox.value == kullanici_adi && kullanici_sifre == girisSifreBox.value) {
+                    alert("giris basarili");
+                    birinciGUIgit(girisadBox.value);
+                } else {
+                    alert("hatali giris");
+                }
+
+            }
+
+            else {
+                alert("hata");
+            }
+        }
+
+        async function sifreDegistirme() {
+            var ref = doc(db, databaseName, sifreDgstrAdBox.value);
+
+            const docSnap = await getDoc(ref);
+            if (docSnap.exists()) {
+                kullanici_adi = docSnap.data().KullaniciAd;
+                kullanici_sifre = docSnap.data().Sifre;
+                if (sifreDgstrAdBox.value == kullanici_adi && kullanici_sifre == sifreDgstrEskiSifreBox.value) {
+                    await updateDoc(
+                        ref, {
+
+                        Sifre: sifreDgstrYeniSifreBox.value
+                    }
+                    ).then(() => {
+                        alert("sifre degisti");
+                    }
+
+                    ).catch((error) => {
+                        alert("error :" + error);
+                    }
+
+                    )
+                }
+            }
+
+        }
+
+        kayitButton.addEventListener("click", Ekleme);
+        girisButton.addEventListener("click", Giris);
+        sifreButton.addEventListener("click", sifreDegistirme);
+
+
+        function birinciGUIgit(Id) {
+
+            location.replace("gelismisMap.html?" + Id + "");
+        }
+
+        function ikinciGUIgit(Id) {
+            location.replace("IkinciGUI.html?" + Id + "");
+        }
+
+    </script>
+
+</body>
+
+</html>
